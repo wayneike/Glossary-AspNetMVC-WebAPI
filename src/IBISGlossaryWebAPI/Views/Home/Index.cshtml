@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>IBIS Glossary ASP.NET MVC Web API</title>
+    <link href="../../Content/Site.css" rel="stylesheet" />
+    <script src="../../Scripts/jquery-1.7.1.min.js" 
+        type="text/javascript"></script>
+
+        <script type="text/javascript">
+            emptyDefinitionMessage = '-- To be defined later --';
+
+            $(document).ready(function () {
+                ListAllGlossaryItems();
+                HideSelectedTerm();
+            });
+
+            function ListAllGlossaryItems() {
+                $('#glossary').text('');
+
+                $.getJSON("api/GlossaryAPI/GetAllGlossaryItems",
+                function (data) {
+                    $.each(data, function (key, val) {
+
+                        var str = val.Term + ': ' + val.Definition;
+                        var id = val.ID;
+
+                        $('#glossary').append('<li onClick=OnGlossaryItemClick(\'' + id + '\');>' + str + '</li>');
+                    });
+                }).error(
+                    function (data) {
+                        alert(data.responseText);
+                });
+            }
+
+            function OnGlossaryItemClick(id) {
+                $('#id').text(id);
+
+                $.getJSON("api/GlossaryAPI/GetGlossaryDefinitionByID/" + id,
+                function (data) {
+                    $('#term').val(data.Term);
+                    $('#definition').val(data.Definition);
+                    ShowSelectedTerm();
+                    $('#selected').text(data.Term);
+                }).error(
+                    function (data) {
+                        alert(data.responseText);
+                });
+            }
+
+            function DeleteGlossaryItem() {
+                var term = encodeURIComponent($('#term').val());
+                HideSelectedTerm(); // Reset "Selected Term" if visible
+
+                if (term != '') { // proceed only if the term to be delete is specified
+                    var url = '/api/GlossaryApi/DeleteGlossaryItem/' + term;
+                    $.ajax({
+                        url: url,
+                        type: 'DELETE',
+                        contentType: "application/x-www-form-urlencoded;charset=utf-8",
+                        success: function () {
+                            ListAllGlossaryItems(); // refresh glossary
+                        },
+                        error: function (data) {
+                            alert('Delete failed\r\nEscaped Term=' + term + '\r\nURL=' + url + '\r\n\r\n' + data.statusText + '\r\n' + data.responseText);
+                        }
+                    });
+                }
+                else {
+                    alert('You must specify the term to be deleted');
+                }
+            }
+
+            function AddGlossaryItem() {
+                var term = encodeURIComponent($('#term').val());
+                var def = encodeURIComponent($('#definition').val());
+
+                HideSelectedTerm(); // Hide and Reset "Selected Term" if visible
+
+                if (term != '') { // proceed only if the term to be added is specified
+                    if (def == '') {
+                        def = emptyDefinitionMessage;
+                    }
+                    $.ajax({
+                        url: '/api/GlossaryApi/PostGlossaryItem/' + def + '/' + term ,
+                        type: 'POST',
+                        contentType: "application/x-www-form-urlencoded;charset=UTF-8",
+                        success: function () {
+                            ListAllGlossaryItems(); // refresh glossary
+                        },
+                        error: function (data) {
+                            alert('Add failed\r\nEscaped Term=' + term + '\r\nEscaped Definition=' + def + '\r\n\r\n' + data.statusText + '\r\n' + data.responseText);
+                        }
+                    });
+                }
+                else {
+                    alert('You must specify the term to be added');
+                }
+            }
+
+            function ModifyGlossaryItem() {
+                var term = encodeURIComponent($('#term').val());
+                var id = $('#id').text();
+                var def = encodeURIComponent($('#definition').val());
+
+                if (term != '') { // proceed only if the term to be added is specified
+                    if (def == '') {
+                        def = emptyDefinitionMessage;
+                    }
+                    $.ajax({
+                        url: '/api/GlossaryApi/PostModGlossaryItem/' + def + '/' + id + '/' + term,
+                        type: 'POST',
+                        contentType: "application/x-www-form-urlencoded;charset=UTF-8",
+                        success: function () {
+                            ListAllGlossaryItems(); // refresh glossary
+                            HideSelectedTerm(); // Reset "Selected Term"
+                        },
+                        error: function (data) {
+                            alert('Modify failed\r\nID=' + id + '\r\nEscaped Term=' + term + '\r\nEscaped Definition=' + def + '\r\n\r\n' + data.statusText + '\r\n' + data.responseText);
+                        }
+                    });
+                }
+                else {
+                    alert('Term cannot be blank');
+                }
+            }
+
+            function ClearInputs() {
+                $('#term').val('');
+                $('#definition').val('');         
+                HideSelectedTerm();
+            }
+
+            function ShowSelectedTerm() {
+                $('#selected').show();
+                $('#selectedLabel').show();
+                $('#modTerm').show();
+            }
+
+            function HideSelectedTerm() {
+                $('#selected').hide();
+                $('#selectedLabel').hide();
+                $('#modTerm').hide();
+                $('#id').text(''); // reset values
+                $('#selected').text('');
+            }
+        </script>
+
+</head>
+<body id="body" >
+    <div class="main-content">
+        <div>
+            <h1>Glossary</h1>
+            <label for="glossary">Select to modify</label>
+            <ul id="glossary"/>
+        </div>
+        <div>
+            <input type="button" value="Refresh Glossary" onclick="ListAllGlossaryItems();" />
+        </div>
+        <div>
+            <label id="id" style="visibility:hidden"></label>
+            <p>
+                <label id="selectedLabel" for="selected">SELECTED TERM:</label>
+                <label id="selected"></label>
+            </p>
+
+            <label for="term">TERM:</label>
+            <input type="text" id="term" style="width:auto; height:auto"/>
+            <label for="definition">DEFINITION:</label>
+            <input type="text" id="definition" style="width:1000px; height:auto" />
+            <p>
+                <input type="button" value="Add Definition" onclick="AddGlossaryItem();" />
+                <input type="button" id="modTerm" value="Modify Term & Definition" onclick="ModifyGlossaryItem();" />
+                <input type="button" value="Delete" onclick="DeleteGlossaryItem();" />
+            </p>
+        </div>
+        <div>
+            <input type="button" value="Clear Input Boxes" onclick="ClearInputs();" />
+        </div>
+    </div>
+</body>
+</html>
