@@ -1,0 +1,4 @@
+IIS may have to be configured to accept special characters in URL.  See below:
+
+http://blogs.iis.net/nazim/archive/2011/04/18/use-of-special-characters-like-in-an-iis-url.aspx
+http://adorr.net/2010/01/configure-iis-to-accept-url-with-special-characters.html
